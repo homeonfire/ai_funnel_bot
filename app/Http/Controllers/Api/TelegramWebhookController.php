@@ -134,6 +134,9 @@ class TelegramWebhookController extends Controller
             $session->save();
 
             if ($didTransition) {
+                // СБРОС КЭША СВЯЗЕЙ (Исправление бесконечного цикла)
+                $session->refresh(); 
+
                 $this->processAiOrchestrator(
                     $bot, 
                     $session, 
