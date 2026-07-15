@@ -4,7 +4,6 @@
     <script src="https://cdn.jsdelivr.net/gh/jerosoler/Drawflow/dist/drawflow.min.js"></script>
     
     <style>
-        /* Задаем размеры холста */
         #drawflow {
             position: relative;
             width: 100%;
@@ -17,13 +16,13 @@
             background: var(--gray-900);
             border-color: var(--gray-700);
         }
-        /* Стилизуем карточки шагов */
         .drawflow .drawflow-node {
             background: var(--white);
             border: 2px solid var(--primary-500);
             border-radius: 8px;
             padding: 15px;
             color: var(--gray-900);
+            width: 250px;
         }
         .dark .drawflow .drawflow-node {
             background: var(--gray-800);
@@ -55,21 +54,69 @@
         document.addEventListener('alpine:init', () => {
             Alpine.data('visualBuilder', () => ({
                 editor: null,
+                // Получаем массив этапов и связей напрямую из Livewire PHP
+                stepsData: @json($this->stepsData), 
 
                 initDrawflow() {
                     const id = document.getElementById("drawflow");
                     this.editor = new Drawflow(id);
                     this.editor.reroute = true;
-                    
-                    // Запускаем
                     this.editor.start();
 
-                    // Пример: загружаем стартовый узел
-                    this.editor.addNode('start', 0, 1, 150, 200, 'start', {}, 'Приветствие (/start)');
+                    this.loadNodesFromDb();
+                },
+
+                loadNodesFromDb() {
+                    let dbIdToNodeId = {};
+                    let posX = 50;
+
+                    // 1. Создаем узлы (блоки этапов)
+                    this.stepsData.forEach((step, index) => {
+                        let html = `
+                            <div>
+                                <strong class="text-lg">${step.name}</strong><br>
+                                <small class="text-gray-500">ID в базе: ${step.id}</small>
+                            </div>
+                        `;
+
+                        // Смещаем блоки лесенкой для красоты
+                        let posY = 150 + (index % 2 === 0 ? 0 : 100);
+
+                        // addNode(name, inputs, outputs, posx, posy, class, data, html)
+                        let nodeId = this.editor.addNode(
+                            'step', 
+                            1, // 1 точка входа
+                            1, // 1 точка выхода
+                            posX, 
+                            posY, 
+                            'step-node', 
+                            { db_id: step.id }, 
+                            html
+                        );
+
+                        // Запоминаем, какой внутренний ID выдал Drawflow для нашего ID из базы
+                        dbIdToNodeId[step.id] = nodeId;
+                        posX += 300; 
+                    });
+
+                    // 2. Рисуем связи (стрелочки переходов)
+                    this.stepsData.forEach(step => {
+                        let fromNodeId = dbIdToNodeId[step.id];
+
+                        if (step.outgoing_transitions && step.outgoing_transitions.length > 0) {
+                            step.outgoing_transitions.forEach(transition => {
+                                let toNodeId = dbIdToNodeId[transition.to_step_id];
+
+                                if (fromNodeId && toNodeId) {
+                                    // Протягиваем стрелочку: от выхода 1-го узла ко входу 2-го
+                                    this.editor.addConnection(fromNodeId, toNodeId, 'output_1', 'input_1');
+                                }
+                            });
+                        }
+                    });
                 },
 
                 addNode() {
-                    // addNode(name, inputs, outputs, posx, posy, class, data, html)
                     this.editor.addNode(
                         'step', 
                         1, 
@@ -77,7 +124,7 @@
                         400, 
                         200, 
                         'step-node', 
-                        {}, 
+                        { db_id: null }, 
                         '<div><strong>Новый этап</strong><br><small>Нажмите для ред.</small></div>'
                     );
                 },
@@ -85,7 +132,6 @@
                 saveData() {
                     const data = this.editor.export();
                     console.log('Схема для сохранения в базу:', data);
-                    // В будущем здесь будет вызов Livewire метода: $wire.saveNodes(data)
                 }
             }))
         })

@@ -3,29 +3,37 @@
 namespace App\Filament\Resources\FunnelResource\Pages;
 
 use App\Filament\Resources\FunnelResource;
-use App\Models\Funnel;
 use Filament\Resources\Pages\Page;
+use Filament\Resources\Pages\Concerns\InteractsWithRecord;
 use Illuminate\Contracts\Support\Htmlable;
 
 class VisualBuilder extends Page
 {
+    use InteractsWithRecord;
+
     protected static string $resource = FunnelResource::class;
 
     protected static string $view = 'filament.resources.funnel-resource.pages.visual-builder';
 
-    // Скрываем страницу из бокового меню, так как мы будем заходить на неё из таблицы
     protected static bool $shouldRegisterNavigation = false;
 
-    public Funnel $record;
-
-    public function mount(Funnel $record): void
+    public function mount(int | string $record): void
     {
-        $this->record = $record;
+        $this->record = $this->resolveRecord($record); 
     }
 
-    // Меняем заголовок страницы
     public function getTitle(): string | Htmlable
     {
         return 'Визуальный редактор: ' . $this->record->name;
+    }
+
+    // НОВЫЙ МЕТОД: Отдаем шаги и переходы на фронтенд
+    public function getStepsDataProperty(): array
+    {
+        return $this->record->steps()
+            ->with('outgoingTransitions')
+            ->orderBy('sort_order')
+            ->get()
+            ->toArray();
     }
 }
