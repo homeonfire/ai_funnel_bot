@@ -119,6 +119,9 @@ class TelegramWebhookController extends Controller
             $extractedData = $response['extracted_data'];
 
             if (!empty($textToUser)) {
+                // Магия UTM: прогоняем текст через наш парсер ссылок перед отправкой
+                $textToUser = $this->appendUtmToUrls($textToUser, (string)$session->external_chat_id);
+                
                 $messages[] = ['role' => 'assistant', 'content' => $textToUser];
                 $tg->sendMessage($textToUser);
             }
@@ -197,5 +200,45 @@ class TelegramWebhookController extends Controller
         }
         
         return false;
+    }
+
+    protected function appendUtmToUrls(string $text, string $chatId): string
+    {
+        // Ищем все ссылки начинающиеся с http:// или https://
+        return preg_replace_callback('/(https?:\/\/[^\s"\'<>\)]+)/i', function ($matches) use ($chatId) {
+            $url = $matches[1];
+            
+            // Отсекаем случайную пунктуацию в конце ссылки (точки, запятые), если регулярка их захватила
+            $trailing = '';
+            if (preg_match('/([.,!?]+)$/', $url, $punctMatches)) {
+                $trailing = $punctMatches[1];
+                $url = substr($url, 0, -strlen($trailing));
+            }
+
+            $parsedUrl = parse_url($url);
+            if ($parsedUrl === false) return $matches[0]; // Если ссылка кривая, возвращаем как есть
+
+            $queryParams = [];
+            if (isset($parsedUrl['query'])) {
+                parse_str($parsedUrl['query'], $queryParams); // Разбираем текущие параметры, если они есть
+            }
+
+            // Добавляем или перезаписываем наши UTM-метки
+            $queryParams['utm_source'] = 'ai_assistant';
+            $queryParams['tg_id'] = $chatId;
+
+            // Собираем ссылку обратно
+            $newQuery = http_build_query($queryParams);
+            
+            $scheme = isset($parsedUrl['scheme']) ? $parsedUrl['scheme'] . '://' : '';
+            $host = $parsedUrl['host'] ?? '';
+            $port = isset($parsedUrl['port']) ? ':' . $parsedUrl['port'] : '';
+            $path = $parsedUrl['path'] ?? '';
+            $fragment = isset($parsedUrl['fragment']) ? '#' . $parsedUrl['fragment'] : '';
+
+            $newUrl = $scheme . $host . $port . $path . '?' . $newQuery . $fragment;
+
+            return $newUrl . $trailing;
+        }, $text);
     }
 }
