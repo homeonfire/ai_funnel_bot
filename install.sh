@@ -17,16 +17,27 @@ if [ -d "$PROJECT_PATH/.git" ]; then
     cd $PROJECT_PATH
     
     echo "📥 Получение новых изменений из GitHub..."
-    git pull origin main # или master, если у тебя основная ветка называется так
+    git pull origin main
+    
+    # Если каким-то чудом пропал .env файл (например, при сбое прошлой установки)
+    if [ ! -f ".env" ]; then
+        echo "⚙️ Файл .env не найден! Создаем из шаблона..."
+        cp .env.example .env
+        php artisan config:clear
+        php artisan key:generate --force
+    fi
     
     echo "📦 Обновление зависимостей Composer..."
     composer install --optimize-autoloader --no-dev
     
+    echo "🧹 Сброс старого кэша..."
+    php artisan optimize:clear
+    php artisan config:clear
+    
     echo "🗄 Выполнение новых миграций базы данных..."
     php artisan migrate --force
     
-    echo "🧹 Обновление кэша Laravel..."
-    php artisan optimize:clear
+    echo "⚡ Сборка нового кэша Laravel..."
     php artisan config:cache
     php artisan route:cache
     php artisan view:cache
@@ -113,7 +124,9 @@ sed -i "s|^DB_PASSWORD=.*|DB_PASSWORD=$DB_PASS|" .env
 echo "📦 Установка зависимостей Composer..."
 composer install --optimize-autoloader --no-dev
 
+# Сначала жестко чистим кэш конфигов, только потом генерим ключ
 echo "🔑 Генерация ключа шифрования..."
+php artisan config:clear
 php artisan key:generate --force
 
 echo "🗄 Создание таблиц в базе данных..."
