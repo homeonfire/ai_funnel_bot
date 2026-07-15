@@ -51,6 +51,7 @@ class ChatSessionResource extends Resource
                         Forms\Components\KeyValue::make('context')
                             ->label('')
                             ->disabled()
+                            ->default([])
                             ->columnSpanFull(),
                     ])
                     ->collapsed(false), // Развернуто по умолчанию
@@ -75,6 +76,7 @@ class ChatSessionResource extends Resource
                                     ->readOnly()
                                     ->rows(3),
                             ])
+                            ->default([])
                             // Запрещаем админу удалять/добавлять сообщения руками
                             ->disableItemAddition()
                             ->disableItemDeletion()
