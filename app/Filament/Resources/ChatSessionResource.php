@@ -78,9 +78,9 @@ class ChatSessionResource extends Resource
                             ])
                             ->default([])
                             // Запрещаем админу удалять/добавлять сообщения руками
-                            ->disableItemAddition()
-                            ->disableItemDeletion()
-                            ->disableItemMovement()
+                            ->addable(false)
+                            ->deletable(false)
+                            ->reorderable(false)
                             ->columnSpanFull(),
                     ]),
             ]);
