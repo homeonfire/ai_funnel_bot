@@ -5,6 +5,8 @@
 # ==============================================================================
 PROJECT_PATH="/var/www/ai-funnel"
 GIT_URL="https://github.com/homeonfire/ai_funnel_bot.git"
+DB_NAME="aifunnel"
+DB_USER="funneluser"
 
 # ==============================================================================
 # РЕЖИМ ОБНОВЛЕНИЯ (Если проект уже установлен)
@@ -14,7 +16,7 @@ if [ -d "$PROJECT_PATH/.git" ]; then
     echo "🔄 Обнаружен установленный проект. Запускаем обновление..."
     echo "====================================================================="
     
-    # Решаем проблему с правами Git (Dubious ownership)
+    # 1. Железно решаем проблему прав Git
     git config --global --add safe.directory $PROJECT_PATH
     
     cd $PROJECT_PATH
@@ -22,11 +24,32 @@ if [ -d "$PROJECT_PATH/.git" ]; then
     echo "📥 Получение новых изменений из GitHub..."
     git pull origin main
     
+    # 2. Лечим .env, если он поврежден или в нем остались решетки от Laravel 11
     if [ ! -f ".env" ]; then
-        echo "⚙️ Файл .env не найден! Создаем из шаблона..."
+        echo "⚙️ Файл .env не найден! Восстанавливаем из шаблона..."
+        DB_PASS=$(openssl rand -base64 12)
+        
+        # Обновляем пароль в самой базе, чтобы он совпал с новым .env
+        sudo -u postgres psql -c "ALTER USER $DB_USER WITH PASSWORD '$DB_PASS';"
+        
         cp .env.example .env
+        sed -i 's/^# DB_/DB_/' .env # Снимаем решетки
+        
+        sed -i "s|^APP_NAME=.*|APP_NAME=AiFunnel|" .env
+        sed -i "s|^APP_ENV=.*|APP_ENV=production|" .env
+        sed -i "s|^APP_DEBUG=.*|APP_DEBUG=false|" .env
+        sed -i "s|^DB_CONNECTION=.*|DB_CONNECTION=pgsql|" .env
+        sed -i "s|^DB_HOST=.*|DB_HOST=127.0.0.1|" .env
+        sed -i "s|^DB_PORT=.*|DB_PORT=5432|" .env
+        sed -i "s|^DB_DATABASE=.*|DB_DATABASE=$DB_NAME|" .env
+        sed -i "s|^DB_USERNAME=.*|DB_USERNAME=$DB_USER|" .env
+        sed -i "s|^DB_PASSWORD=.*|DB_PASSWORD=$DB_PASS|" .env
+        
         php artisan config:clear
         php artisan key:generate --force
+    else
+        # На всякий случай снимаем решетки, если они там остались от кривой установки
+        sed -i 's/^# DB_/DB_/' .env
     fi
     
     echo "📦 Обновление зависимостей Composer..."
@@ -68,8 +91,6 @@ echo ""
 read -p "🌐 Введите ваш домен (например, ai.domain.com): " DOMAIN
 read -p "📧 Введите ваш Email (для выпуска бесплатного SSL): " EMAIL
 
-DB_NAME="aifunnel"
-DB_USER="funneluser"
 DB_PASS=$(openssl rand -base64 12)
 
 echo ""
@@ -81,7 +102,7 @@ apt install -y software-properties-common curl wget git unzip
 apt install -y nginx postgresql postgresql-contrib
 apt install -y certbot python3-certbot-nginx
 
-# Ставим PHP 8.4
+# Ставим PHP 8.4 (решает проблему с symfony/clock)
 add-apt-repository ppa:ondrej/php -y
 apt update
 apt install -y php8.4-fpm php8.4-pgsql php8.4-cli php8.4-curl php8.4-mbstring \
@@ -91,6 +112,10 @@ curl -sS https://getcomposer.org/installer | php
 mv composer.phar /usr/local/bin/composer
 
 echo "🐘 Настройка базы данных PostgreSQL..."
+# Очищаем старые следы, если установка прервалась
+sudo -u postgres psql -c "DROP DATABASE IF EXISTS $DB_NAME;"
+sudo -u postgres psql -c "DROP USER IF EXISTS $DB_USER;"
+
 sudo -u postgres psql -c "CREATE DATABASE $DB_NAME;"
 sudo -u postgres psql -c "CREATE USER $DB_USER WITH PASSWORD '$DB_PASS';"
 sudo -u postgres psql -c "GRANT ALL PRIVILEGES ON DATABASE $DB_NAME TO $DB_USER;"
@@ -100,14 +125,17 @@ echo "🐙 Клонирование репозитория..."
 mkdir -p /var/www
 cd /var/www
 
-# Решаем проблему с правами Git до клонирования
+# Решаем проблему с правами Git до клонирования и чистим мусор
 git config --global --add safe.directory $PROJECT_PATH
-
+rm -rf $PROJECT_PATH
 git clone $GIT_URL ai-funnel
 cd $PROJECT_PATH
 
 echo "⚙️ Генерация конфигурации (.env)..."
 cp .env.example .env
+
+# ВАЖНО: Разкомментируем строки базы данных в Laravel 11
+sed -i 's/^# DB_/DB_/' .env
 
 sed -i "s|^APP_NAME=.*|APP_NAME=AiFunnel|" .env
 sed -i "s|^APP_ENV=.*|APP_ENV=production|" .env
@@ -180,7 +208,7 @@ server {
 }
 EOF
 
-ln -s $NGINX_CONF /etc/nginx/sites-enabled/
+ln -sf $NGINX_CONF /etc/nginx/sites-enabled/
 rm -f /etc/nginx/sites-enabled/default
 systemctl restart nginx
 
