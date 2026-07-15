@@ -1,66 +1,96 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+# 🚀 AiFunnel Bot
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+![Laravel](https://img.shields.io/badge/Laravel-11.x-FF2D20?style=for-the-badge&logo=laravel&logoColor=white)
+![PHP](https://img.shields.io/badge/PHP-8.4-777BB4?style=for-the-badge&logo=php&logoColor=white)
+![PostgreSQL](https://img.shields.io/badge/PostgreSQL-316192?style=for-the-badge&logo=postgresql&logoColor=white)
+![Filament](https://img.shields.io/badge/Filament-3.x-FBBF24?style=for-the-badge&logo=laravel&logoColor=black)
 
-## About Laravel
+**AiFunnel** — это умный ИИ-оркестратор воронок продаж для Telegram. В отличие от классических чат-ботов с жесткими кнопками, AiFunnel ведет живой диалог с клиентом, самостоятельно извлекает нужные данные в формате JSON и переводит пользователя на следующие этапы воронки на основе заданных логических правил.
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+---
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+## 🔥 Ключевые возможности
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+* 🧠 **AI Оркестратор:** Поддержка LLM (через абстрактную фабрику) для генерации ответов и парсинга контекста из свободной речи клиента.
+* 🎛 **Визуальная панель управления:** Удобная админка на базе [Filament](https://filamentphp.com/) для управления ботами, промптами, шагами воронки и переменными.
+* ⚡ **Telegram Webhooks:** Использование библиотеки Nutgram для молниеносной обработки входящих сообщений без задержек Long Polling.
+* 🔄 **State Machine диалогов:** Бессерверное (stateless) хранение контекста и истории переписки каждого пользователя в PostgreSQL (`ChatSession`).
+* 📦 **One-Click Deploy:** Интерактивный bash-скрипт для автоматического развертывания LEMP-стека, SSL-сертификата и приложения на чистом сервере за 2 минуты.
 
-## Learning Laravel
+---
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework.
+## 🛠 Стек технологий
 
-You may also try the [Laravel Bootcamp](https://bootcamp.laravel.com), where you will be guided through building a modern Laravel application from scratch.
+* **Backend:** PHP 8.4, Laravel 11
+* **Database:** PostgreSQL
+* **Admin Panel:** Filament v3
+* **Telegram API:** Nutgram (SergiX44)
+* **Web Server:** Nginx (LEMP)
 
-If you don't feel like reading, [Laracasts](https://laracasts.com) can help. Laracasts contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
+---
 
-## Laravel Sponsors
+## 🚀 Быстрый старт (Установка на сервер)
 
-We would like to extend our thanks to the following sponsors for funding Laravel development. If you are interested in becoming a sponsor, please visit the [Laravel Partners program](https://partners.laravel.com).
+Для установки вам потребуется чистый сервер (Ubuntu 22.04 / 24.04). 
+**Важно:** Убедитесь, что A-запись вашего домена уже указывает на IP-адрес сервера!
 
-### Premium Partners
+Подключитесь к серверу по SSH (`root`) и выполните 3 команды:
 
-- **[Vehikl](https://vehikl.com/)**
-- **[Tighten Co.](https://tighten.co)**
-- **[WebReinvent](https://webreinvent.com/)**
-- **[Kirschbaum Development Group](https://kirschbaumdevelopment.com)**
-- **[64 Robots](https://64robots.com)**
-- **[Curotec](https://www.curotec.com/services/technologies/laravel/)**
-- **[Cyber-Duck](https://cyber-duck.co.uk)**
-- **[DevSquad](https://devsquad.com/hire-laravel-developers)**
-- **[Jump24](https://jump24.co.uk)**
-- **[Redberry](https://redberry.international/laravel/)**
-- **[Active Logic](https://activelogic.com)**
-- **[byte5](https://byte5.de)**
-- **[OP.GG](https://op.gg)**
+```bash
+# 1. Скачиваем установочный скрипт
+wget [https://raw.githubusercontent.com/homeonfire/ai_funnel_bot/main/install.sh](https://raw.githubusercontent.com/homeonfire/ai_funnel_bot/main/install.sh)
 
-## Contributing
+# 2. Выдаем права на выполнение
+chmod +x install.sh
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+# 3. Запускаем мастер установки
+./install.sh
 
-## Code of Conduct
+```
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
+Скрипт интерактивно запросит:
 
-## Security Vulnerabilities
+1. Ваш домен (например, `bot.domain.com`)
+2. Email для SSL-сертификата (Let's Encrypt)
+3. Email и пароль для создания аккаунта Администратора.
 
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
+После завершения скрипт выдаст все доступы (от админки и базы данных), и бот будет полностью готов к работе в Production-режиме (с активным HTTPS).
 
-## License
+---
 
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+## 🔄 Обновление проекта
+
+Если вы внесли изменения в код и запушили их на GitHub, обновить боевой сервер можно одной командой. Зайдите на сервер и выполните:
+
+```bash
+bash /var/www/ai-funnel/install.sh
+
+```
+
+Скрипт автоматически распознает установленный проект, стянет новые коммиты (`git pull`), обновит пакеты `composer`, выполнит свежие миграции и сбросит кэш Laravel. Никакого простоя.
+
+---
+
+## 🧠 Как работает Оркестратор (Under the Hood)
+
+1. **Инициализация:** Клиент пишет `/start` в Telegram. Создается `ChatSession`, бот определяет первый шаг воронки (`Step`).
+2. **Сборка промпта:** Формируется системный промпт (Глобальный промпт воронки + Промпт текущего шага + Текущий извлеченный JSON-контекст + История диалога).
+3. **Генерация:** LLM отвечает клиенту текстом и параллельно возвращает заполненные переменные (если клиент назвал имя, телефон, бюджет и т.д.).
+4. **Оценка перехода (Evaluate Transitions):** Если извлеченные данные удовлетворяют правилам перехода (Rules) текущего шага, бот незаметно переводит пользователя на следующий этап и сам инициирует продолжение диалога.
+
+---
+
+## 📸 Скриншоты панели управления
+
+*(Здесь можно добавить скриншоты интерфейса Filament: дашборд, конструктор шагов, настройки бота)*
+
+> `![Админка](link_to_image_1)`
+> `![Конструктор воронки](link_to_image_2)`
+
+---
+
+## 🛡 Безопасность
+
+* Установщик автоматически генерирует надежные пароли для PostgreSQL.
+* По умолчанию доступ к Filament админке разрешен только авторизованным пользователям (через реализацию `FilamentUser` в модели `User`).
+* Файлы окружения `.env` защищены правами доступа Nginx.
