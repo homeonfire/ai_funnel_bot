@@ -53,7 +53,15 @@ public static function table(Table $table): Table
             Tables\Columns\ToggleColumn::make('is_active')->label('Активна'),
         ])
         ->filters([])
-        ->actions([Tables\Actions\EditAction::make()]);
+        ->actions([
+                Tables\Actions\EditAction::make(),
+                // Кнопка для перехода на холст
+                Tables\Actions\Action::make('builder')
+                    ->label('Визуальный редактор')
+                    ->icon('heroicon-o-share')
+                    ->color('info')
+                    ->url(fn (Funnel $record): string => static::getUrl('builder', ['record' => $record])),
+            ]);
 }
 
     public static function getRelations(): array
@@ -69,6 +77,7 @@ public static function table(Table $table): Table
             'index' => Pages\ListFunnels::route('/'),
             'create' => Pages\CreateFunnel::route('/create'),
             'edit' => Pages\EditFunnel::route('/{record}/edit'),
+            'builder' => Pages\VisualBuilder::route('/{record}/builder'),
         ];
     }
 }
