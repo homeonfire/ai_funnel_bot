@@ -27,18 +27,18 @@ class TelegramWebhookController extends Controller
             $nutgram->onMessage(function (Nutgram $tg) use ($bot) {
                 $chatId = $tg->chatId();
                 $text = $tg->message()->text;
-                
+
                 if (!$text) return;
 
                 // Используем твои поля (external_chat_id)
                 $session = ChatSession::firstOrCreate(
                     [
-                        'bot_id' => $bot->id, 
+                        'bot_id' => $bot->id,
                         'external_chat_id' => $chatId,
                         'platform' => 'telegram'
                     ],
                     [
-                        'context' => [], 
+                        'context' => [],
                         'messages' => [],
                         'last_message_at' => now(),
                     ]
@@ -47,14 +47,14 @@ class TelegramWebhookController extends Controller
                 if ($text === '/start') {
                     $funnel = $bot->funnels()->first();
                     $firstStep = $funnel ? $funnel->steps()->orderBy('sort_order')->first() : null;
-                    
+
                     $session->update([
                         'current_step_id' => $firstStep?->id,
                         'context' => [],
                         'messages' => [],
                         'last_message_at' => now(),
                     ]);
-                    
+
                     $this->processAiOrchestrator($bot, $session, $tg, "⚠️ Системное уведомление: Клиент запустил бота (команда /start). Изучи инструкцию текущего этапа и начни диалог первым.", 'system');
                     return;
                 }
@@ -81,6 +81,7 @@ class TelegramWebhookController extends Controller
         $messages[] = ['role' => $role, 'content' => $inputText];
 
         $step = $session->currentStep;
+        Log::info("Current Step ID: " . ($step?->id ?? 'null') . " Prompt: " . ($step?->stage_prompt ?? 'EMPTY'));
         $funnel = $step ? $step->funnel : $bot->funnels()->first();
 
         if (!$bot->api_key) {
@@ -121,7 +122,7 @@ class TelegramWebhookController extends Controller
             if (!empty($textToUser)) {
                 // Магия UTM: прогоняем текст через наш парсер ссылок перед отправкой
                 $textToUser = $this->appendUtmToUrls($textToUser, (string)$session->external_chat_id);
-                
+
                 $messages[] = ['role' => 'assistant', 'content' => $textToUser];
                 $tg->sendMessage($textToUser);
             }
@@ -138,13 +139,13 @@ class TelegramWebhookController extends Controller
 
             if ($didTransition) {
                 // СБРОС КЭША СВЯЗЕЙ (Исправление бесконечного цикла)
-                $session->refresh(); 
+                $session->refresh();
 
                 $this->processAiOrchestrator(
-                    $bot, 
-                    $session, 
-                    $tg, 
-                    '⚠️ Системное уведомление: Выполнен переход на новый этап. Изучи инструкцию нового этапа и немедленно напиши клиенту первым.', 
+                    $bot,
+                    $session,
+                    $tg,
+                    '⚠️ Системное уведомление: Выполнен переход на новый этап. Изучи инструкцию нового этапа и немедленно напиши клиенту первым.',
                     'system'
                 );
             }
@@ -164,7 +165,7 @@ class TelegramWebhookController extends Controller
         foreach ($transitions as $transition) {
             $rules = $transition->rules ?? [];
             $logicalOperator = $transition->logical_operator ?? 'AND';
-            
+
             if (empty($rules)) continue;
 
             $matchesCount = 0;
@@ -187,7 +188,7 @@ class TelegramWebhookController extends Controller
                 if ($rulePassed) $matchesCount++;
             }
 
-            $isMatch = ($logicalOperator === 'AND' && $matchesCount === count($rules)) || 
+            $isMatch = ($logicalOperator === 'AND' && $matchesCount === count($rules)) ||
                        ($logicalOperator === 'OR' && $matchesCount > 0);
 
             if ($isMatch) {
@@ -198,7 +199,7 @@ class TelegramWebhookController extends Controller
                 }
             }
         }
-        
+
         return false;
     }
 
@@ -207,7 +208,7 @@ class TelegramWebhookController extends Controller
         // Ищем все ссылки начинающиеся с http:// или https://
         return preg_replace_callback('/(https?:\/\/[^\s"\'<>\)]+)/i', function ($matches) use ($chatId) {
             $url = $matches[1];
-            
+
             // Отсекаем случайную пунктуацию в конце ссылки (точки, запятые), если регулярка их захватила
             $trailing = '';
             if (preg_match('/([.,!?]+)$/', $url, $punctMatches)) {
@@ -229,7 +230,7 @@ class TelegramWebhookController extends Controller
 
             // Собираем ссылку обратно
             $newQuery = http_build_query($queryParams);
-            
+
             $scheme = isset($parsedUrl['scheme']) ? $parsedUrl['scheme'] . '://' : '';
             $host = $parsedUrl['host'] ?? '';
             $port = isset($parsedUrl['port']) ? ':' . $parsedUrl['port'] : '';
