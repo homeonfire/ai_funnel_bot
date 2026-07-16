@@ -7,6 +7,8 @@
             :min-zoom="0.2"
             :max-zoom="4"
             @node-click="onNodeClick"
+            @connect="onConnect" <!-- НОВОЕ: Ловим создание связи -->
+            @edge-double-click="onEdgeDoubleClick"
         >
             <!-- Кастомный дизайн узла (в стиле n8n) -->
             <template #node-custom="props">
@@ -86,6 +88,24 @@ const onNodeClick = (event) => {
     window.dispatchEvent(new CustomEvent('open-step-settings', { 
         detail: { step_id: node.data.db_id } 
     }));
+};
+
+// Функция: Обработка новой связи (когда тянешь стрелочку)
+const onConnect = (params) => {
+    edges.value.push({
+        id: `e${params.source}-${params.target}`,
+        source: params.source,
+        target: params.target,
+        animated: true,
+        style: { stroke: '#3b82f6', strokeWidth: 2 },
+    });
+};
+
+// Функция: Удаление связи по двойному клику
+const onEdgeDoubleClick = (event) => {
+    if (confirm('Удалить эту связь?')) {
+        edges.value = edges.value.filter(e => e.id !== event.edge.id);
+    }
 };
 
 // Функция: Сбор данных и отправка их обратно в Livewire
