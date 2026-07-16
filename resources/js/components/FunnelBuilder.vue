@@ -6,8 +6,7 @@
             :default-viewport="{ zoom: 1 }"
             :min-zoom="0.2"
             :max-zoom="4"
-            @node-click="onNodeClick"
-            @connect="onConnect" <!-- НОВОЕ: Ловим создание связи -->
+            @connect="onConnect"
             @edge-double-click="onEdgeDoubleClick"
         >
             <!-- Кастомный дизайн узла (в стиле n8n) -->
