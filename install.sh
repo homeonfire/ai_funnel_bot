@@ -56,6 +56,12 @@ if [ -d "$PROJECT_PATH/.git" ]; then
     export COMPOSER_ALLOW_SUPERUSER=1
     composer install --optimize-autoloader --no-dev
     
+    # --- НОВОЕ: Обновление фронтенда ---
+    echo "🎨 Сборка фронтенда (Vue Flow & Vite)..."
+    npm install
+    npm run build
+    # -----------------------------------
+
     echo "🧹 Сброс старого кэша..."
     php artisan optimize:clear
     php artisan config:clear
@@ -105,7 +111,13 @@ apt install -y software-properties-common curl wget git unzip
 apt install -y nginx postgresql postgresql-contrib
 apt install -y certbot python3-certbot-nginx
 
-# Ставим PHP 8.4 (решает проблему с symfony/clock)
+# --- НОВОЕ: Установка Node.js 20 LTS ---
+echo "🟢 Установка Node.js..."
+curl -fsSL https://deb.nodesource.com/setup_20.x | bash -
+apt install -y nodejs
+# ---------------------------------------
+
+# Ставим PHP 8.4
 add-apt-repository ppa:ondrej/php -y
 apt update
 apt install -y php8.4-fpm php8.4-pgsql php8.4-cli php8.4-curl php8.4-mbstring \
@@ -155,6 +167,12 @@ echo "📦 Установка зависимостей Composer..."
 export COMPOSER_ALLOW_SUPERUSER=1
 composer install --optimize-autoloader --no-dev
 
+# --- НОВОЕ: Сборка фронтенда ---
+echo "🎨 Сборка фронтенда (Vue Flow & Vite)..."
+npm install
+npm run build
+# -------------------------------
+
 echo "🔑 Генерация ключа шифрования..."
 php artisan config:clear
 php artisan key:generate --force
@@ -163,7 +181,7 @@ echo "🗄 Создание таблиц в базе данных..."
 php artisan migrate --force
 
 echo "👤 Создание администратора..."
-# Создаем пользователя напрямую через Tinker (работает на 100% без интерактива)
+# Создаем пользователя напрямую через Tinker
 php artisan tinker --execute="App\Models\User::firstOrCreate(['email' => '${ADMIN_EMAIL}'], ['name' => 'Admin', 'password' => bcrypt('${ADMIN_PASS}')]);"
 
 echo "🧹 Кэширование для ускорения работы..."
