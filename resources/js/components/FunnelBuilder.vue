@@ -119,12 +119,16 @@ const emitSaveData = () => {
 };
 
 onMounted(() => {
+    // Временные массивы
+    const tempNodes = [];
+    const tempEdges = [];
+
+    // ШАГ 1: Сначала собираем ВСЕ карточки на холсте
     props.initialData.forEach((step, index) => {
-        // Берем координаты из базы. Если их нет (например, старые записи) — используем лесенку
         let posX = step.pos_x !== undefined && step.pos_x !== null ? parseFloat(step.pos_x) : 100 + (index * 350);
         let posY = step.pos_y !== undefined && step.pos_y !== null ? parseFloat(step.pos_y) : 150 + (index % 2 === 0 ? 0 : 80);
 
-        nodes.value.push({
+        tempNodes.push({
             id: step.id.toString(),
             type: 'custom',
             position: { x: posX, y: posY },
@@ -134,10 +138,13 @@ onMounted(() => {
                 transitions: step.outgoing_transitions ? step.outgoing_transitions.length : 0
             },
         });
+    });
 
+    // ШАГ 2: Только когда все карточки созданы, перебираем и добавляем связи
+    props.initialData.forEach((step) => {
         if (step.outgoing_transitions) {
             step.outgoing_transitions.forEach(trans => {
-                edges.value.push({
+                tempEdges.push({
                     id: `e${step.id}-${trans.to_step_id}`,
                     source: step.id.toString(),
                     target: trans.to_step_id.toString(),
@@ -147,6 +154,10 @@ onMounted(() => {
             });
         }
     });
+
+    // Разом отдаем данные Vue (чтобы избежать лишних перерисовок)
+    nodes.value = tempNodes;
+    edges.value = tempEdges;
 
     // Подписываемся на события от кнопок Filament
     window.addEventListener('request-add-node', addNewNode);
