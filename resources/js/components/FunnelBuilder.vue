@@ -8,27 +8,39 @@
             :max-zoom="4"
             @connect="onConnect"
             @edge-double-click="onEdgeDoubleClick"
+            @node-click="onNodeClick" 
         >
             <!-- Кастомный дизайн узла (в стиле n8n) -->
             <template #node-custom="props">
-                <div class="n8n-node">
-                    <!-- Точка входа (слева) -->
-                    <Handle type="target" position="left" class="n8n-handle" />
+    <div class="n8n-node">
+        <!-- Точка входа -->
+        <Handle type="target" position="left" class="n8n-handle" />
 
-                    <div class="n8n-node-header">
-                        <div class="n8n-icon">⚡️</div>
-                        <div class="n8n-title">{{ props.data.label }}</div>
-                    </div>
+        <div class="n8n-node-header">
+            <div class="n8n-icon">⚡️</div>
+            <div class="n8n-title">{{ props.data.label }}</div>
+        </div>
 
-                    <div class="n8n-node-body">
-                        <div class="n8n-subtitle">ID: {{ props.data.db_id }}</div>
-                        <div class="n8n-text">Переходов: {{ props.data.transitions }}</div>
-                    </div>
+        <div class="n8n-node-body">
+            <div class="n8n-subtitle">ID: {{ props.data.db_id }}</div>
+        </div>
 
-                    <!-- Точка выхода (справа) -->
-                    <Handle type="source" position="right" class="n8n-handle" />
-                </div>
-            </template>
+        <!-- ГЕНЕРАЦИЯ ТОЧЕК ВЫХОДА -->
+        <div class="n8n-node-outputs">
+            <div v-for="(trans, index) in props.data.transitions" :key="index" class="n8n-output-row">
+                <span class="n8n-output-label">{{ trans.label || 'Ветка ' + (index + 1) }}</span>
+                <!-- Каждому переходу - свой уникальный Handle -->
+                <Handle 
+                    type="source" 
+                    position="right" 
+                    :id="trans.id.toString()" 
+                    :style="{ top: (20 + (index * 30)) + 'px' }" 
+                    class="n8n-handle" 
+                />
+            </div>
+        </div>
+    </div>
+</template>
 
             <Background pattern-color="#cbd5e1" :gap="24" :size="2" />
             <Controls position="bottom-right" />
@@ -74,18 +86,21 @@ const addNewNode = () => {
 };
 
 // Функция: Обработка клика по карточке этапа (вызов шторки Filament)
+// Правильная обработка клика через событие Vue Flow
 const onNodeClick = (event) => {
-    const node = event.node;
+    // В Vue Flow данные лежат внутри объекта event.node
+    const nodeData = event.node.data; 
     
-    // Если это только что созданная карточка, которую еще не сохранили в базу
-    if (node.data.db_id === 'new') {
+    console.log('✅ Клик пойман! Открываем настройки для ID:', nodeData.db_id);
+    
+    if (nodeData.db_id === 'new') {
         alert('Сначала сохраните схему, чтобы настроить этот этап!');
         return;
     }
 
-    // Отправляем ID этапа в Alpine/Livewire
+    // Отправляем ID этапа в Livewire
     window.dispatchEvent(new CustomEvent('open-step-settings', { 
-        detail: { step_id: node.data.db_id } 
+        detail: { step_id: nodeData.db_id } 
     }));
 };
 
