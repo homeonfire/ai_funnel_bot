@@ -6,6 +6,7 @@
             :default-viewport="{ zoom: 1 }"
             :min-zoom="0.2"
             :max-zoom="4"
+            @node-click="onNodeClick"
         >
             <!-- Кастомный дизайн узла (в стиле n8n) -->
             <template #node-custom="props">
@@ -71,6 +72,22 @@ const addNewNode = () => {
     });
 };
 
+// Функция: Обработка клика по карточке этапа (вызов шторки Filament)
+const onNodeClick = (event) => {
+    const node = event.node;
+    
+    // Если это только что созданная карточка, которую еще не сохранили в базу
+    if (node.data.db_id === 'new') {
+        alert('Сначала сохраните схему, чтобы настроить этот этап!');
+        return;
+    }
+
+    // Отправляем ID этапа в Alpine/Livewire
+    window.dispatchEvent(new CustomEvent('open-step-settings', { 
+        detail: { step_id: node.data.db_id } 
+    }));
+};
+
 // Функция: Сбор данных и отправка их обратно в Livewire
 const emitSaveData = () => {
     const graphData = {
@@ -82,10 +99,11 @@ const emitSaveData = () => {
 };
 
 onMounted(() => {
-    let posX = 100;
-
     props.initialData.forEach((step, index) => {
-        let posY = 150 + (index % 2 === 0 ? 0 : 80);
+        // Берем координаты из базы. Если их нет (например, старые записи) — используем лесенку
+        let posX = step.pos_x !== undefined && step.pos_x !== null ? parseFloat(step.pos_x) : 100 + (index * 350);
+        let posY = step.pos_y !== undefined && step.pos_y !== null ? parseFloat(step.pos_y) : 150 + (index % 2 === 0 ? 0 : 80);
+
         nodes.value.push({
             id: step.id.toString(),
             type: 'custom',
@@ -96,7 +114,6 @@ onMounted(() => {
                 transitions: step.outgoing_transitions ? step.outgoing_transitions.length : 0
             },
         });
-        posX += 350;
 
         if (step.outgoing_transitions) {
             step.outgoing_transitions.forEach(trans => {
@@ -140,6 +157,7 @@ onUnmounted(() => {
     width: 240px;
     box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);
     transition: box-shadow 0.2s, border-color 0.2s;
+    cursor: pointer; /* Добавили курсор-руку при наведении */
 }
 
 .n8n-node:hover {
