@@ -1,0 +1,213 @@
+<template>
+    <div class="vue-flow-wrapper">
+        <VueFlow
+            v-model:nodes="nodes"
+            v-model:edges="edges"
+            :default-viewport="{ zoom: 1 }"
+            :min-zoom="0.2"
+            :max-zoom="4"
+        >
+            <!-- Кастомный дизайн узла (в стиле n8n) -->
+            <template #node-custom="props">
+                <div class="n8n-node">
+                    <!-- Точка входа (слева) -->
+                    <Handle type="target" position="left" class="n8n-handle" />
+
+                    <div class="n8n-node-header">
+                        <div class="n8n-icon">⚡️</div>
+                        <div class="n8n-title">{{ props.data.label }}</div>
+                    </div>
+
+                    <div class="n8n-node-body">
+                        <div class="n8n-subtitle">ID: {{ props.data.db_id }}</div>
+                        <div class="n8n-text">Переходов: {{ props.data.transitions }}</div>
+                    </div>
+
+                    <!-- Точка выхода (справа) -->
+                    <Handle type="source" position="right" class="n8n-handle" />
+                </div>
+            </template>
+
+            <Background pattern-color="#cbd5e1" :gap="24" :size="2" />
+            <Controls position="bottom-right" />
+        </VueFlow>
+    </div>
+</template>
+
+<script setup>
+import { ref, onMounted, onUnmounted } from 'vue';
+import { VueFlow, useVueFlow } from '@vue-flow/core';
+import { Background } from '@vue-flow/background';
+import { Controls } from '@vue-flow/controls';
+import { Handle } from '@vue-flow/core';
+
+import '@vue-flow/core/dist/style.css';
+import '@vue-flow/core/dist/theme-default.css';
+import '@vue-flow/controls/dist/style.css';
+
+const props = defineProps({
+    initialData: {
+        type: Array,
+        required: true,
+        default: () => []
+    }
+});
+
+const nodes = ref([]);
+const edges = ref([]);
+
+// Функция: Добавление нового этапа на холст
+const addNewNode = () => {
+    const newId = `new_${Date.now()}`; // Временный ID до сохранения в базу
+    nodes.value.push({
+        id: newId,
+        type: 'custom',
+        position: { x: 250, y: 250 },
+        data: {
+            label: 'Новый этап',
+            db_id: 'new',
+            transitions: 0
+        },
+    });
+};
+
+// Функция: Сбор данных и отправка их обратно в Livewire
+const emitSaveData = () => {
+    const graphData = {
+        nodes: nodes.value,
+        edges: edges.value
+    };
+    // Отправляем событие наружу, чтобы Alpine его поймал
+    window.dispatchEvent(new CustomEvent('save-funnel-data', { detail: graphData }));
+};
+
+onMounted(() => {
+    let posX = 100;
+
+    props.initialData.forEach((step, index) => {
+        let posY = 150 + (index % 2 === 0 ? 0 : 80);
+        nodes.value.push({
+            id: step.id.toString(),
+            type: 'custom',
+            position: { x: posX, y: posY },
+            data: {
+                label: step.name,
+                db_id: step.id,
+                transitions: step.outgoing_transitions ? step.outgoing_transitions.length : 0
+            },
+        });
+        posX += 350;
+
+        if (step.outgoing_transitions) {
+            step.outgoing_transitions.forEach(trans => {
+                edges.value.push({
+                    id: `e${step.id}-${trans.to_step_id}`,
+                    source: step.id.toString(),
+                    target: trans.to_step_id.toString(),
+                    animated: true,
+                    style: { stroke: '#3b82f6', strokeWidth: 2 },
+                });
+            });
+        }
+    });
+
+    // Подписываемся на события от кнопок Filament
+    window.addEventListener('request-add-node', addNewNode);
+    window.addEventListener('request-save-graph', emitSaveData);
+});
+
+onUnmounted(() => {
+    // Убираем слушатели при закрытии страницы
+    window.removeEventListener('request-add-node', addNewNode);
+    window.removeEventListener('request-save-graph', emitSaveData);
+});
+</script>
+
+<style scoped>
+.vue-flow-wrapper {
+    width: 100%;
+    height: 700px;
+    background-color: #f8fafc;
+    border-radius: 12px;
+    border: 1px solid #e2e8f0;
+}
+
+/* Стили карточки под n8n */
+.n8n-node {
+    background: white;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    width: 240px;
+    box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);
+    transition: box-shadow 0.2s, border-color 0.2s;
+}
+
+.n8n-node:hover {
+    box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1);
+    border-color: #94a3b8;
+}
+
+/* Заголовок с иконкой */
+.n8n-node-header {
+    display: flex;
+    align-items: center;
+    padding: 12px 16px;
+    border-bottom: 1px solid #f1f5f9;
+    border-top-left-radius: 8px;
+    border-top-right-radius: 8px;
+    background: linear-gradient(to right, #ffffff, #f8fafc);
+}
+
+.n8n-icon {
+    background: #eff6ff;
+    color: #3b82f6;
+    width: 28px;
+    height: 28px;
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+    margin-right: 12px;
+}
+
+.n8n-title {
+    font-weight: 600;
+    color: #1e293b;
+    font-size: 14px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* Тело карточки */
+.n8n-node-body {
+    padding: 12px 16px;
+}
+
+.n8n-subtitle {
+    font-size: 11px;
+    color: #64748b;
+    margin-bottom: 4px;
+}
+
+.n8n-text {
+    font-size: 12px;
+    color: #475569;
+}
+
+/* Кастомные точки входа/выхода */
+.n8n-handle {
+    width: 12px;
+    height: 12px;
+    background: white;
+    border: 2px solid #cbd5e1;
+    transition: border-color 0.2s, background-color 0.2s;
+}
+.n8n-handle:hover {
+    border-color: #3b82f6;
+    background: #eff6ff;
+    width: 14px;
+    height: 14px;
+}
+</style>
